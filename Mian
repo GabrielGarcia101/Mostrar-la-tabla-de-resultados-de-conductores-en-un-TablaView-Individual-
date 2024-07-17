@@ -1,0 +1,79 @@
+import javax.swing.*;
+import java.awt.*;
+import java.sql.*;
+
+public class Formula1ViewerFrame extends JFrame {
+    private JComboBox<String> yearComboBox;
+    private JButton yearButton;
+    private JTextArea driverInfoTextArea;
+
+    public Formula1ViewerFrame() {
+        setTitle("Formula 1 Data Viewer");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(600, 400);
+        setLayout(new BorderLayout());
+
+        yearComboBox = new JComboBox<>();
+        yearButton = new JButton("Year");
+        driverInfoTextArea = new JTextArea();
+
+        JPanel topPanel = new JPanel();
+        topPanel.add(yearButton);
+        topPanel.add(yearComboBox);
+
+        JScrollPane scrollPane = new JScrollPane(driverInfoTextArea);
+
+        add(topPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+
+        String[] years = {"2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015"};
+        yearComboBox.setModel(new DefaultComboBoxModel<>(years));
+
+        yearButton.addActionListener(e -> {
+            String selectedYear = (String) yearComboBox.getSelectedItem();
+            if (selectedYear != null) {
+                try {
+                    // Establecer conexión a la base de datos
+                    Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/nombre_de_tu_base_de_datos", "usuario", "contraseña");
+
+                    // Consulta SQL para obtener datos de los conductores del año seleccionado
+                    String sql = "SELECT * FROM drivers WHERE year = ?";
+                    PreparedStatement statement = connection.prepareStatement(sql);
+                    statement.setString(1, selectedYear);
+                    ResultSet resultSet = statement.executeQuery();
+
+                    // Procesar el resultado y mostrar en el JTextArea
+                    StringBuilder sb = new StringBuilder();
+                    while (resultSet.next()) {
+                        String driverName = resultSet.getString("driver_name");
+                        String team = resultSet.getString("team");
+                        String nationality = resultSet.getString("nationality");
+                        int points = resultSet.getInt("points");
+
+                        sb.append("Driver: ").append(driverName).append("\n");
+                        sb.append("Team: ").append(team).append("\n");
+                        sb.append("Nationality: ").append(nationality).append("\n");
+                        sb.append("Points: ").append(points).append("\n");
+                        sb.append("\n");
+                    }
+                    driverInfoTextArea.setText(sb.toString());
+
+                    // Cerrar recursos
+                    resultSet.close();
+                    statement.close();
+                    connection.close();
+
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(Formula1ViewerFrame.this, "Error al conectar a la base de datos", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        setVisible(true);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new Formula1ViewerFrame());
+    }
+}
